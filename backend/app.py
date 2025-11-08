@@ -43,6 +43,44 @@ def create_app(config_name=None):
     def health():
         return jsonify({'status': 'healthy', 'service': 'ChickFlow API'}), 200
     
+    # Database initialization endpoint (for first-time setup)
+    @app.route('/init-db')
+    def init_db():
+        try:
+            from models import User
+            from werkzeug.security import generate_password_hash
+            
+            # Create all tables
+            db.create_all()
+            
+            # Check if admin user already exists
+            existing_admin = User.query.filter_by(username='admin').first()
+            
+            if not existing_admin:
+                # Create admin user
+                admin = User(
+                    username='admin',
+                    email='admin@chickflow.com',
+                    role='Admin'
+                )
+                admin.password_hash = generate_password_hash('admin123')
+                db.session.add(admin)
+                db.session.commit()
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Database initialized with admin user',
+                    'credentials': {'username': 'admin', 'password': 'admin123'}
+                }), 200
+            else:
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Database already initialized'
+                }), 200
+                
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found(error):
