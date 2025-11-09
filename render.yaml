@@ -1,9 +1,16 @@
 services:
+  # PostgreSQL Database
+  - type: pserv
+    name: chickflow-db
+    runtime: postgres
+    plan: free
+    ipAllowList: []
+
   # Flask Backend API
   - type: web
     name: chickflow-api
     runtime: python
-    buildCommand: "cd backend && pip install -r requirements.txt"
+    buildCommand: "cd backend && pip install -r requirements.txt && python init_db.py"
     startCommand: "cd backend && gunicorn wsgi:app"
     envVars:
       - key: FLASK_APP
@@ -11,8 +18,12 @@ services:
       - key: FLASK_ENV
         value: production
       - key: DATABASE_URL
-        value: sqlite:///instance/chickflow.db
+        fromDatabase:
+          name: chickflow-db
+          property: connectionString
       - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION
         value: 3.11.0
