@@ -20,28 +20,13 @@ def create_app(config_name=None):
     # Initialize extensions
     db.init_app(app)
     
-    # Configure CORS for production - allow multiple origins
-    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-    allowed_origins = [
-        frontend_url,
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://*.vercel.app"  # Allow all Vercel deployments
-    ]
+    # Configure CORS for production - allow all Vercel deployments
+    CORS(app, 
+         resources={r"/*": {"origins": "*"}},
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         supports_credentials=False)
     
-    # Add any additional origins from environment variable
-    extra_origins = os.getenv('EXTRA_ORIGINS', '')
-    if extra_origins:
-        allowed_origins.extend(extra_origins.split(','))
-    
-    CORS(app, resources={
-        r"/*": {  # Apply to all routes
-            "origins": allowed_origins,
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True
-        }
-    })
     
     JWTManager(app)
     Migrate(app, db)
